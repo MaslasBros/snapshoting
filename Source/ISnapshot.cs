@@ -5,8 +5,6 @@ namespace MaslasBros.Snapshoting
         ///<summary>The SMRI of THIS instance</summary>
         public uint sMRI { get; }
 
-        public int UniqueID { get; }
-
         ///<summary>
         /// Call upon construction to subscribe THIS instance to the Snapshot Manager
         /// <para>Primarily used in saving</para>
