@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace MaslasBros.Snapshoting
 {
     public interface ISnapshotModel

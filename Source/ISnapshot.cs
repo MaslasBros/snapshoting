@@ -17,6 +17,12 @@ namespace MaslasBros.Snapshoting
         /// </summary>
         public uint RegisterToManager(uint loadedSMRI, ISnapshotModel model);
 
+        /// <summary>
+        /// Call after registering the ISnapshot to the manager to make it retrieve the references SMRIs of it.
+        /// <para>Primarily used in loading</para>
+        /// </summary>
+        public void RetrieveReferences();
+
         ///<summary>Call to update the ISnapshotModel associated with THIS ISnapshot instance through the Snapshot Manager.</summary>
         public void UpdateToManager();
 

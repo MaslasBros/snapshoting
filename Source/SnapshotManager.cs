@@ -1,4 +1,8 @@
 using MessagePack;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace MaslasBros.Snapshoting
 {
@@ -8,6 +12,14 @@ namespace MaslasBros.Snapshoting
         private static uint smriInternal = 0;
         ///<summary>Get the current SMRI number</summary>
         protected static uint sMRI => smriInternal;
+
+        ///<summary>Dictionary storing the ISnapshots. Accessible with their unique SMRIs.</summary>
+        Dictionary<uint, ISnapshot> snapshots = new Dictionary<uint, ISnapshot>();
+        ///<summary>Dictionary storing the ISnapshotModels. Accessible with their unique SMRIs.</summary>
+        Dictionary<uint, ISnapshotModel> models = new Dictionary<uint, ISnapshotModel>();
+
+        public IReadOnlyDictionary<uint, ISnapshot> Snapshots => snapshots;
+        public IReadOnlyDictionary<uint, ISnapshotModel> Models => models;
 
         ///<summary>Subscribe to this event to get notified when it's time to take a snapshot.</summary>
         protected event Action onTakeSnapshot;
@@ -33,11 +45,6 @@ namespace MaslasBros.Snapshoting
 
         ///<summary>Increments and returns an SMRI for use on a new ISnapshot instance.</summary>
         public virtual uint GetCurrentSMRI() => ++smriInternal;
-
-        ///<summary>Dictionary storing the ISnapshots. Accessible with their unique SMRIs.</summary>
-        protected Dictionary<uint, ISnapshot> snapshots = new Dictionary<uint, ISnapshot>();
-        ///<summary>Dictionary storing the ISnapshotModels. Accessible with their unique SMRIs.</summary>
-        protected Dictionary<uint, ISnapshotModel> models = new Dictionary<uint, ISnapshotModel>();
 
         #region SNAPSHOT_REGISTRATION
         /// <summary>
@@ -68,7 +75,6 @@ namespace MaslasBros.Snapshoting
             if (!models.TryAdd(sMRI, model))
             { throw new ArgumentException("Passed sMRI is a duplicate."); }
 
-            //Debug.Log("Added model with SMRI " + sMRI + " and type of " + model.GetType());
             smriInternal = sMRI;
         }
         #endregion
@@ -84,7 +90,7 @@ namespace MaslasBros.Snapshoting
             {
                 return (T)models[sMRI];
             }
-            else { throw new ArgumentException("Passed SMRI not present in model dictionary."); }
+            else { throw new ArgumentException("Passed SMRI not present in model dictionary. SMRI: " + sMRI); }
         }
 
         ///<summary>Updates the values of the ISnapshotModel associated with the passed sMRI, with the values of the passed ISnapshotModel.</summary>
@@ -104,14 +110,14 @@ namespace MaslasBros.Snapshoting
         /// </summary>
         protected void SnapshotProcess(string finalSaveFolder, string finalSaveName)
         {
+            //Data gathering proccess
+            foreach (KeyValuePair<uint, ISnapshot> snapshotCandidate in snapshots)
+            {
+                snapshotCandidate.Value.UpdateToManager();
+            }
+
             Task.Run(() =>
             {
-                //Data gathering proccess
-                foreach (KeyValuePair<uint, ISnapshot> snapshotCandidate in snapshots)
-                {
-                    snapshotCandidate.Value.UpdateToManager();
-                }
-
                 if (!Directory.Exists(finalSaveFolder))
                 { Directory.CreateDirectory(finalSaveFolder); }
 
@@ -151,13 +157,6 @@ namespace MaslasBros.Snapshoting
         {
             snapshots.Remove(sMRI);
             models.Remove(sMRI);
-        }
-
-        ///<summary>Resets the SMRI counter and clears the models dictionary.</summary>
-        public virtual void ResetSMRI()
-        {
-            models = new Dictionary<uint, ISnapshotModel>();
-            smriInternal = 0;
         }
         #endregion
     }
