@@ -84,7 +84,7 @@ namespace MaslasBros.Snapshoting
         /// Returns the ISnapshotModel associated with the passed sMRI from the models cache.
         /// </summary>
         /// <exception cref = "System.ArgumentException">Passed SMRI not present in model dictionary.</exception>
-        public T AccessModel<T>(uint sMRI)
+        public T AccessModel<T>(uint sMRI) where T: ISnapshotModel
         {
             if (models.ContainsKey(sMRI))
             {
