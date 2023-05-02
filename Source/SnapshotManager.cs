@@ -108,7 +108,7 @@ namespace MaslasBros.Snapshoting
         /// Begins the data updating and data serialization of every ISnapshotModel present in the cache dictionary
         /// on a new thread.
         /// </summary>
-        protected void SnapshotProcess(string finalSaveFolder, string finalSaveName)
+        protected virtual void SnapshotProcess(string finalSaveFolder, string finalSaveName)
         {
             //Data gathering proccess
             foreach (KeyValuePair<uint, ISnapshot> snapshotCandidate in snapshots)
