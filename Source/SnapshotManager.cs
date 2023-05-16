@@ -2,6 +2,7 @@ using MessagePack;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MaslasBros.Snapshoting
@@ -18,7 +19,9 @@ namespace MaslasBros.Snapshoting
         ///<summary>Dictionary storing the ISnapshotModels. Accessible with their unique SMRIs.</summary>
         Dictionary<uint, ISnapshotModel> models = new Dictionary<uint, ISnapshotModel>();
 
+        /// <summary>A readonly form of the currently saved Snapshots</summary>
         public IReadOnlyDictionary<uint, ISnapshot> Snapshots => snapshots;
+        /// <summary>A readonly form of the currecntly saved Models</summary>
         public IReadOnlyDictionary<uint, ISnapshotModel> Models => models;
 
         ///<summary>Subscribe to this event to get notified when it's time to take a snapshot.</summary>
@@ -107,8 +110,11 @@ namespace MaslasBros.Snapshoting
         ///<summary>
         /// Begins the data updating and data serialization of every ISnapshotModel present in the cache dictionary
         /// on a new thread.
-        /// </summary>
-        protected virtual void SnapshotProcess(string finalSaveFolder, string finalSaveName)
+        ///</summary>
+        /// <param name="finalSaveFolder">Absolute path to the save folder</param>
+        /// <param name="finalSaveName">The name of the created serialized file</param>
+        /// <param name="writeAtStart">Pass this argument only if you want the information of this dictionary to be written at the beginning of the file.</param>
+        protected virtual void SnapshotProcess(string finalSaveFolder, string finalSaveName, Dictionary<uint, ISnapshotModel>? writeAtStart = null)
         {
             //Data gathering proccess
             foreach (KeyValuePair<uint, ISnapshot> snapshotCandidate in snapshots)
@@ -121,21 +127,15 @@ namespace MaslasBros.Snapshoting
                 if (!Directory.Exists(finalSaveFolder))
                 { Directory.CreateDirectory(finalSaveFolder); }
 
-                //Model Grouping process
+                //Groups initialization
                 Dictionary<Type, List<object>> groups = new Dictionary<Type, List<object>>();
-                foreach (KeyValuePair<uint, ISnapshotModel> modelCandidate in models)
-                {
-                    Type modeltype = modelCandidate.Value.GetType();
-                    if (!groups.ContainsKey(modeltype))
-                    {
-                        groups[modeltype] = new List<object>();
-                        groups[modeltype].Add(modelCandidate.Value);
-                    }
-                    else
-                    {
-                        groups[modeltype].Add(modelCandidate.Value as object);
-                    }
-                }
+
+                //Write at start serialization
+                if (writeAtStart != null)
+                { AddToGroup(ref groups, writeAtStart); }
+
+                //Model Grouping process
+                AddToGroup(ref groups, models);
 
                 //Finaly, model serialization
                 byte[] serGroups = MessagePackSerializer.Serialize(groups);
@@ -150,6 +150,28 @@ namespace MaslasBros.Snapshoting
             {
                 OnSnapshotCompeted();
             });
+        }
+
+        /// <summary>
+        /// Adds the passed models objects to the referenced groups list as objects and separates them by Type.
+        /// </summary>
+        /// <param name="groups">The Dictionary to add the grouped models at.</param>
+        /// <param name="models">The models to be added at the groups Dictionary</param>
+        void AddToGroup(ref Dictionary<Type, List<object>> groups, Dictionary<uint, ISnapshotModel> models)
+        {
+            foreach (KeyValuePair<uint, ISnapshotModel> modelCandidate in models)
+            {
+                Type modeltype = modelCandidate.Value.GetType();
+                if (!groups.ContainsKey(modeltype))
+                {
+                    groups[modeltype] = new List<object>();
+                    groups[modeltype].Add(modelCandidate.Value);
+                }
+                else
+                {
+                    groups[modeltype].Add(modelCandidate.Value as object);
+                }
+            }
         }
 
         ///<summary>Removes the ISnapshot & ISnapshotModel references from the manager cache based on the passed sMRI.</summary>
