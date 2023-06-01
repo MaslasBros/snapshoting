@@ -2,7 +2,7 @@ using MessagePack;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MaslasBros.Snapshoting
@@ -87,7 +87,7 @@ namespace MaslasBros.Snapshoting
         /// Returns the ISnapshotModel associated with the passed sMRI from the models cache.
         /// </summary>
         /// <exception cref = "System.ArgumentException">Passed SMRI not present in model dictionary.</exception>
-        public T AccessModel<T>(uint sMRI) where T: ISnapshotModel
+        public T AccessModel<T>(uint sMRI) where T : ISnapshotModel
         {
             if (models.ContainsKey(sMRI))
             {
@@ -113,8 +113,7 @@ namespace MaslasBros.Snapshoting
         ///</summary>
         /// <param name="finalSaveFolder">Absolute path to the save folder</param>
         /// <param name="finalSaveName">The name of the created serialized file</param>
-        /// <param name="writeAtStart">Pass this argument only if you want the information of this dictionary to be written at the beginning of the file.</param>
-        protected virtual void SnapshotProcess(string finalSaveFolder, string finalSaveName, Dictionary<uint, ISnapshotModel>? writeAtStart = null)
+        protected virtual void SnapshotProcess(string finalSaveFolder, string finalSaveName)
         {
             //Data gathering proccess
             foreach (KeyValuePair<uint, ISnapshot> snapshotCandidate in snapshots)
@@ -127,15 +126,13 @@ namespace MaslasBros.Snapshoting
                 if (!Directory.Exists(finalSaveFolder))
                 { Directory.CreateDirectory(finalSaveFolder); }
 
-                //Groups initialization
-                Dictionary<Type, List<object>> groups = new Dictionary<Type, List<object>>();
-
-                //Write at start serialization
-                if (writeAtStart != null)
-                { AddToGroup(ref groups, writeAtStart); }
+                //Sorts the model dictionary based on their serialization order class attribute
+                Dictionary<uint, ISnapshotModel> sortedModels = models.OrderBy(kv => GetSerializationOrder(kv.Value))
+                                                                    .ToDictionary(kv => kv.Key, kv => kv.Value);
 
                 //Model Grouping process
-                AddToGroup(ref groups, models);
+                Dictionary<Type, List<object>> groups = new Dictionary<Type, List<object>>();
+                AddToGroup(ref groups, sortedModels);
 
                 //Finaly, model serialization
                 byte[] serGroups = MessagePackSerializer.Serialize(groups);
@@ -150,6 +147,16 @@ namespace MaslasBros.Snapshoting
             {
                 OnSnapshotCompeted();
             });
+        }
+
+        ///<summary>Returns the serialization order of the passed model.</summary>
+        uint GetSerializationOrder(ISnapshotModel model)
+        {
+            Type modelType = model.GetType();
+            SnapshotSerializeOrder modelSerNum = (SnapshotSerializeOrder)modelType.GetCustomAttributes(typeof(SnapshotSerializeOrder), false)
+                                                    .FirstOrDefault();
+
+            return modelSerNum?.SerOrder ?? uint.MaxValue;
         }
 
         /// <summary>
@@ -169,7 +176,7 @@ namespace MaslasBros.Snapshoting
                 }
                 else
                 {
-                    groups[modeltype].Add(modelCandidate.Value as object);
+                    groups[modeltype].Add(modelCandidate.Value);
                 }
             }
         }
