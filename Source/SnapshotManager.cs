@@ -47,24 +47,52 @@ namespace MaslasBros.Snapshoting
         }
 
         ///<summary>Increments and returns an SMRI for use on a new ISnapshot instance.</summary>
-        public virtual uint GetCurrentSMRI() => ++smriInternal;
+        protected virtual uint GetIncrementedCurrentSMRI => ++smriInternal;
 
         #region SNAPSHOT_REGISTRATION
+        /// <summary>
+        /// Registers a fresh snapshot class and an associated snapshot model of it, to the snapshots and models caches.
+        /// </summary>
+        /// <typeparam name="T">The type of the associated snapshot model</typeparam>
+        /// <param name="snapshot">The reference to the snapshot instance</param>
+        /// <returns>The genrated SMRI</returns>
+        public virtual uint RegisterSnapshot<T>(ISnapshot snapshot) where T : ISnapshotModel, new()
+        {
+            uint smri = GetIncrementedCurrentSMRI;
+
+            AddToSnapshots(sMRI,snapshot);
+            ConstructAddSnapshotModel<T>(smri);
+            
+            return smri;
+        }
+
+        /// <summary>
+        /// Registers the loaded snapshot and model to the snapshots and models cache
+        /// </summary>
+        /// <param name="sMRI">The loaded SMRI</param>
+        /// <param name="snapshot">The reference to the model instance</param>
+        /// <param name="model">The loaded snapshot model</param>
+        public virtual void RegisterLoadedSnapshot(uint sMRI, ISnapshot snapshot, ISnapshotModel model)
+        {
+            AddToSnapshots(sMRI, snapshot);
+            AddToModels(sMRI,model);
+        }
+
         /// <summary>
         /// Call to add the passed ISnapshot to the snapshots cache.
         /// </summary>
         /// <exception cref = "System.ArgumentException">Passed sMRI is a duplicate</exception>
-        public virtual void AddToSnapshots(uint sMRI, ISnapshot snapshot)
+        protected virtual void AddToSnapshots(uint sMRI, ISnapshot snapshot)
         {
             if (!snapshots.TryAdd(sMRI, snapshot))
             { throw new ArgumentException("Passed sMRI is a duplicate."); }
         }
 
         ///<summary>Constructs and adds an ISnapshotModel struct instance to the models cache.</summary>
-        public virtual void ConstructAddSnapshotModel<T>(uint sMRI) where T : ISnapshotModel, new()
+        protected virtual void ConstructAddSnapshotModel<T>(uint sMRI) where T : ISnapshotModel, new()
         {
             T instance = (T)Activator.CreateInstance(typeof(T));
-            instance.refSMRIs = new List<uint>();
+            instance.RefSMRIs = new List<uint>();
 
             AddToModels(sMRI, (ISnapshotModel)instance);
         }
@@ -153,7 +181,7 @@ namespace MaslasBros.Snapshoting
         uint GetSerializationOrder(ISnapshotModel model)
         {
             Type modelType = model.GetType();
-            SnapshotSerializeOrder modelSerNum = (SnapshotSerializeOrder)modelType.GetCustomAttributes(typeof(SnapshotSerializeOrder), false)
+            SnapshotSerializationOrder modelSerNum = (SnapshotSerializationOrder)modelType.GetCustomAttributes(typeof(SnapshotSerializationOrder), false)
                                                     .FirstOrDefault();
 
             return modelSerNum?.SerOrder ?? uint.MaxValue;
@@ -186,6 +214,13 @@ namespace MaslasBros.Snapshoting
         {
             snapshots.Remove(sMRI);
             models.Remove(sMRI);
+        }
+
+        ///<summary>Removes every ISnapshot & ISnapshotModel instances from the snapshot and models caches.</summary>
+        public virtual void RemoveAllFromManager()
+        {
+            snapshots = new Dictionary<uint, ISnapshot>();
+            models = new Dictionary<uint, ISnapshotModel>();
         }
         #endregion
     }
