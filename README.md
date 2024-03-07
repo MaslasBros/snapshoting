@@ -132,7 +132,7 @@ private uint smri = 0;
 ```csharp
   public DummySnapshotClass()
   {
-      smri = common.SaveManager.RegisterSnapshot<SClockManager>(this); 
+      smri = SaveManager.RegisterSnapshot<SClockManager>(this); 
   }
 ```
 3) The method that will be externally OR internally called when the models gets loaded back into the instance after a save reload.
@@ -142,7 +142,7 @@ private uint smri = 0;
       //Instance setup like a fresh registration
       this.smri = sMRI;
       //Registers a loaded ISnapshot class and its model to the SaveManager
-      common.SaveManager.RegisterLoadedSnapshot(this.smri, this, model);
+      SaveManager.RegisterLoadedSnapshot(this.smri, this, model);
   
       SDummySnapshotClass cModel = (SDummySnapshotClass)model;
       //Access to the de-serialized model information that can be written back 
