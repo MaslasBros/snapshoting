@@ -1,17 +1,17 @@
 # Snapshoting
 A C# library that provides the infrastructure to build tools capable of collecting and serializing instance data on runtime without interupting the main thread.
 
-### The SnapshotManager Class
+## The SnapshotManager Class
 
 The *SnapshotManager* is an **abstract** class that the inherited members take the role of caching the combined data from all the fields of the registered *ISnapshot* classes prepared to be serialized on a later step.
 
-### The ISnapshot Interface
+## The ISnapshot Interface
 
 The *ISnapshot* is an interface that the inherited members should be able to interact with the *SnapshotManager* that they are registered into.
 
 Each member should register to the *TakeSnapshot* event of their corresponding *SnapshotManager*. Should the event is triggered then the member of such an interface must collect and deliver the desired data through a *model* class or struct.
 
-### The ISnapshotModel Interface
+## The ISnapshotModel Interface
 
 The *ISnapshotModel* is a **data carriage** interface. The inherited members verify to the *SnapshotManager* their role, which is data delivery between the *SnapshotManager* and an *ISnapshot* interface.
 
@@ -116,7 +116,7 @@ public class DummySnapshotClass : ISnapshot
 {}
 ```
 
-### ISnapshot Interface
+## ISnapshot Interface
 
 1) The SMRI of the instance, this is assigned later on.
 ```csharp
@@ -182,7 +182,7 @@ private uint smri = 0;
 
 After the above operation your class is ready to be serialized.
 
-### ISnapshotModel interface
+## ISnapshotModel interface
 Every ISnapshot class must have a data courier class alongside it that implement the ISnapshotModel interface. e.g.
 ```csharp
 ///<summary>A class representing th ClockManager class instance save model.</summary>
@@ -245,8 +245,8 @@ public SDummySnapshotClass(object[] args)
   [Key(3)]
   public int intField2;
 ```
-###### The [Key(0)] attribute specifies the order of serialization of the fields as shown in [Message Pack C#](https://github.com/neuecc/MessagePack-CSharp#quick-start)
-#### What's inside the object[]
+> The [Key(0)] attribute specifies the order of serialization of the fields as shown in [Message Pack C#](https://github.com/neuecc/MessagePack-CSharp#quick-start)
+## What's inside the object[]
 When de-serialized the object[] contains the fields marked with the [Key(X)] in the order they are set to be serialized in the ISnapshotModel class. e.g. the above model will be serialized as
 ```json
 {
@@ -262,6 +262,6 @@ When de-serialized the object[] contains the fields marked with the [Key(X)] in 
 ```
 so in order for the model to be instantiated back with its de-serialized information the manual allocation of each variable is needed. (Casting back to ISnapshotModel won't work because the information gets deserialized back to an object[], trust me I've lost sleep from it).
 
-# Dependencies
+## Dependencies
 
 - [MessagePack-CSharp](https://github.com/MessagePack-CSharp/MessagePack-CSharp): Extremely Fast MessagePack Serializer for C#(.NET, .NET Core, Unity, Xamarin). / msgpack.org[C#]
