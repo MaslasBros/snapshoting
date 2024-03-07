@@ -1,6 +1,113 @@
 # Snapshoting
 A C# library that provides the infrastructure to build tools capable of collecting and serializing instance data on runtime without interupting the main thread.
 
+### The SnapshotManager Class
+
+The *SnapshotManager* is an **abstract** class that the inherited members take the role of caching the combined data from all the fields of the registered *ISnapshot* classes prepared to be serialized on a later step.
+
+### The ISnapshot Interface
+
+The *ISnapshot* is an interface that the inherited members should be able to interact with the *SnapshotManager* that they are registered into.
+
+Each member should register to the *TakeSnapshot* event of their corresponding *SnapshotManager*. Should the event is triggered then the member of such an interface must collect and deliver the desired data through a *model* class or struct.
+
+### The ISnapshotModel Interface
+
+The *ISnapshotModel* is a **data carriage** interface. The inherited members verify to the *SnapshotManager* their role, which is data delivery between the *SnapshotManager* and an *ISnapshot* interface.
+
+*Diagram1* depicts an example of the structure described above.
+
+```mermaid
+classDiagram
+    class SnapshotManager
+    class SaveManager {
+        +List~CarData~ cars
+    }
+    SnapshotManager <|-- SaveManager
+
+    class ISnapshot
+    class Car {
+        +int wheelsNumber
+        +bool active
+        +float length
+        +float width
+        +float fuelTank
+        +float fuelLeft
+    }
+    ISnapshot <|-- Car
+
+    class ISnapshotModel
+    class CarData {
+        +bool active
+        +float fuelLeft
+    }
+    ISnapshotModel <|-- CarData
+    Car --> CarData : Transfers Data
+    CarData --> SaveManager : Stores Data
+```
+
+## References
+
+Although the structure of *SnapshotManager* is based on very straightforward OOD techniques, the matter of how the references between nested ISnapshot members should be serialized was raised.
+
+The *SnapshotManager* is held responsible on assigning to every and each *ISnapshot* instance a unique SMRI\*.
+
+As it is already stated the data between an ISnapshot instance and the SnapshotManager will be transferred by an intermediate **data carriage** interface called *ISnapshotModel*.
+
+During the start of the *snapshot* process the ISnapshotModel must collect its associated SMRI from the ISnapshot instance and propagate it to the associated ISnapshotModels.
+
+> Note: Every ISnapshotModel holds a *refs* list of the referenced SMRIs.
+
+An example of such case is illustrated on *diagram 2*.
+
+```mermaid
+classDiagram
+    class SnapshotManager {
+        +List~int~ sMRIs
+    }
+    class SaveManager {
+        +List~BikeData~ bikes
+        +List~WheelData~ wheels
+    }
+    SnapshotManager <|-- SaveManager
+
+    class ISnapshotModel {
+        +int sMRI
+        +List~int~ refs
+    }
+    class BikeData
+    ISnapshotModel <|-- BikeData 
+    ISnapshotModel <|-- WheelData
+
+    class ISnapshot {
+        +int sMRI
+    }
+    ISnapshot <|-- Bike
+    ISnapshot <|-- Wheel
+
+    Bike --* Bike1
+    Wheel --* Wheel1
+    Wheel --* Wheel2
+
+    Bike1 <-- SaveManager : SMRI
+    Wheel1 <-- SaveManager : SMRI
+    Wheel2 <-- SaveManager : SMRI
+
+    BikeData1 <.. Bike1 : SMRI
+    WheelData1 <.. Wheel1 : SMRI
+    WheelData2 <.. Wheel2 : SMRI
+
+    BikeData --* BikeData1
+
+    WheelData --* WheelData1
+    WheelData --* WheelData2
+
+    WheelData1 <.. BikeData1 : refs
+    WheelData2 <.. BikeData1 : refs
+```
+
+> \*: *SMRI* is the abbreviation of the Snapshot Manager Reference Index.
+
 # Manual
 
 For an object to be marked as save-able, the ISnapshot interface must be applied to the class declaration, e.g. 
