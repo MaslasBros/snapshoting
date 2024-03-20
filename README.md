@@ -1,3 +1,14 @@
+# Table of Contents
+- [Snapshoting](#snapshoting)
+  - [Snapshot Manager](#the-snapshotmanager-class)
+  - [Snapshot Interface](#the-isnapshot-interface)
+  - [Snapshot Model](#the-isnapshotmodel-interface)
+  - [Reference Preservation](#references)
+- [Manual](#manual)     
+  - [ISnapshot interface](#isnapshot-interface)
+  - [ISnapshotModel interface](#isnapshotmodel-interface)
+- [Dependencies](#dependencies)
+
 # Snapshoting
 A C# library that provides the infrastructure to build tools capable of collecting and serializing instance data on runtime without interupting the main thread.
 
